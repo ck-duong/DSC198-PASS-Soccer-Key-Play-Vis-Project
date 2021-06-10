@@ -147,7 +147,7 @@ def shift_coordinates(df, lat_column, long_column,
     
     return df
 
-def filter_coordinates(df, lat_column, long_column, max_x, max_y):
+def filter_coordinates(df, lat_column, long_column, max_x = 103, max_y = 66):
     '''
     Filters out extreme coordinate values
     
@@ -167,6 +167,7 @@ def filter_coordinates(df, lat_column, long_column, max_x, max_y):
     
     return df
 
+# def get_clean_data(df, lat_column, long_column, lat_val, long_val)
 
 def make_heat_map(df, player, lat_column, long_column,
                   length = 103, width = 66):
@@ -181,20 +182,25 @@ def make_heat_map(df, player, lat_column, long_column,
     :param width: size width of soccer pitch
     :return: heat map of player coordinates
     '''
-    
+
     fig = viz.create_empty_field(len_field=103, wid_field=66)
     
     player_data = df.loc[df['Player'] == player]
-    player_data[lat_column] = player_data[lat_column].append(pd.Series([0, 0, length, length]), ignore_index = True).reset_index(drop = True)
-    player_data[long_column] = player_data[long_column].append(pd.Series([0, width, 0, width]), ignore_index = True).reset_index(drop = True)
+    
+    fill_df = pd.DataFrame([[player, np.nan, 0, 0],
+                            [player, np.nan, 0, width],
+                            [player, np.nan, length, 0],
+                            [player, np.nan, length, width]],
+                          columns = player_data.columns)
+    
+    player_data = pd.concat([player_data, fill_df], ignore_index = True)
 
 #     px.density_contour(df, x = "Converted Latitude", y = "Converted Longitude")
 
     fig.add_trace(go.Histogram2dContour(
-            x = player_data['Converted Latitude'],
-            y = player_data['Converted Longitude']
+            x = player_data[lat_column],
+            y = player_data[long_column]
         ))
 
-    fig.show()
     
     return fig
