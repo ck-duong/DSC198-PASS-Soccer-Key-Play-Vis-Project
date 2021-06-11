@@ -81,38 +81,39 @@ def get_play_by_play(link):
     :param link: URL suffix to scrape
     :return: DataFrame of game play by play
     '''
-    page = requests.get(link)
+    full_link = home_URL + link
+    
+    page = requests.get(full_link)
     soup = BeautifulSoup(page.content, 'html.parser')
     df = pd.DataFrame()
     
     for num in np.arange(1,6):
-        period = "period-" + num
+        period = "period-" + str(num)
         
         timer = True
         timestamps = []
         events = []
         
-        if not soup.find(id = period):
-            continue
+        if soup.find(id = period):
             
-        ### Scraping for play by play ###
-        for table_entry in soup.find(id = period).find_all("td")
-            
-            if table_entry.get('aria-hidden'):
-                continue
-                
-            table_text = table_entry.text.strip()
-            
-            #accounts for goal text
-            if len(table_text) > 2:
-                
-                if timer:
-                    timestamps.append(table_text)
-                    timer = False
-                    
-                else:
-                    events.append(table_text)
-                    timer = True
+            ### Scraping for play by play ###
+            for table_entry in soup.find(id = period).find_all("td"):
+
+                if table_entry.get('aria-hidden'):
+                    continue
+
+                table_text = table_entry.text.strip()
+
+                #accounts for goal text
+                if len(table_text) > 2:
+
+                    if timer:
+                        timestamps.append(table_text)
+                        timer = False
+
+                    else:
+                        events.append(table_text)
+                        timer = True
         
         ### Making the DataFrame ##
         curr_df = pd.DataFrame()
@@ -128,3 +129,22 @@ def get_play_by_play(link):
         df = pd.concat([df, curr_df], ignore_index = True)
         
     return df   
+
+def get_all_pbp():
+    '''
+    Scrapes all play by play event logs from UCSD Athletics webiste
+    '''
+    game_info = pbp.get_game_info()
+    curr_path = os.getcwd()
+    parent_path = os.path.abspath(os.path.join(curr_path, os.pardir))
+    data_folder = '/data/Play by Play/'
+    
+    for game in range(len(game_info)):
+        file = game_info.iloc[game]['Opponent'] + ' ' +\
+            game_info.iloc[game]['Timestamp'] + '.csv'
+        
+        fp = parent_path + data_folder + file
+        
+        play_by_play = pbp.get_play_by_play(game_info.iloc[game]['Suffix'])
+    
+        play_by_play.to_csv(fp, index = False)
